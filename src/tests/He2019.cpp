@@ -1,4 +1,5 @@
 #include "dagSched/tests.h"
+#include <iostream>
 
 // Qingqiang He et al. “Intra-task priority assignmentin real-time scheduling of dag tasks on multi-cores”. (IEEE Transactions on Parallel and Distributed Systems 2019)
 
@@ -60,7 +61,7 @@ float computeR(const int i, const std::set<int>& path, const std::vector<SubTask
 
 }
 
-float computeResponseTimeBound(DAGTask& task, const int m){
+float computeResponseTimeBound(DAGTask& task, const int m, std::vector<int>& priorities){
     //algorithm 1
 
     std::vector<SubTask *> V = task.getVertices();
@@ -68,10 +69,17 @@ float computeResponseTimeBound(DAGTask& task, const int m){
     std::vector<std::set<int>> paths(V.size());
     std::vector<int> ordIDs = task.getTopologicalOrder();
 
-    //assign priority wrt topological order
-    for(int idx = 0, i; idx < ordIDs.size() ; ++idx ){
-        i = ordIDs[idx]; // vertex index
-        V[i]->prio = idx;
+    if (priorities.empty()) {
+        // assign based on topological order
+        for (int idx = 0, i; idx < ordIDs.size(); ++idx) {
+            i = ordIDs[idx]; // vertex index
+            V[i]->prio = idx;
+        }
+    } else {
+        // assign from input vector
+        for (int i = 0; i < V.size(); ++i) {
+            V[i]->prio = priorities[i];
+        }
     }
 
     std::vector<std::set<int>> int_sets(V.size());
@@ -100,12 +108,21 @@ float computeResponseTimeBound(DAGTask& task, const int m){
 
     }
 
+    float responseTime = R[ordIDs[ordIDs.size() -1]];
 
-    return R[ordIDs[ordIDs.size() -1]];
+    if(priorities.empty()) {
+        std::cout << "Response time with no input priority vector: " << responseTime << "\n";
+    } else {
+        std::cout << "Response time with priority vector: " << responseTime << "\n";
+    }
+
+
+    return responseTime;
 }
 
-bool GP_FP_He2019_C(DAGTask task, const int m){
-    if (computeResponseTimeBound(task, m) <= task.getDeadline())
+bool GP_FP_He2019_C(DAGTask task, const int m, std::vector<int>& priorities){
+    float responseTimeBound = computeResponseTimeBound(task, m, priorities);
+    if (responseTimeBound <= task.getDeadline())
         return true;
     return false;
 }
@@ -133,7 +150,9 @@ bool GP_FP_FTP_He2019_C(Taskset taskset, const int m){
                 R[i] = 0;
             }
 
-            R[i] = computeResponseTimeBound(taskset.tasks[i], m);
+            std::vector<int> empty_priorities;  // Empty vector
+
+            R[i] = computeResponseTimeBound(taskset.tasks[i], m, empty_priorities);
             for(int j=0; j<i; ++j)
                 R[i] = R[i] + (1. / m) * workloadUpperBound(taskset.tasks[j], R_old[i], m);
                 

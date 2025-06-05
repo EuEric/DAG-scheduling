@@ -66,9 +66,12 @@ int main(int argc, char **argv){
             implicit_taskset = false;
         }
 
+        //TODO: add input file for priorities and parse
+        std::vector<int> priorities;
+
         if(taskset.tasks[i].getDeadline() <= taskset.tasks[i].getPeriod()){
             std::cout<< "\t\tHan 2019 constrained typed(GP-FP): " <<dagSched::GP_FP_Han2019_C_1(taskset.tasks[i], typed_proc)<<std::endl;
-            std::cout<< "\t\tHe 2019 constrained typed(GP-FP): " <<dagSched::GP_FP_He2019_C(taskset.tasks[i], n_proc)<<std::endl;
+            std::cout<< "\t\tHe 2019 constrained typed(GP-FP): " <<dagSched::GP_FP_He2019_C(taskset.tasks[i], n_proc, priorities)<<std::endl;
         }
         std::cout<< "\t\tBaruah 2012 arbitrary (GP-FP-EDF): "   <<dagSched::GP_FP_EDF_Baruah2012_A(taskset.tasks[i], n_proc)<<std::endl;
         std::cout<< "\t\tGraham 1969 : "   <<dagSched::Graham1969(taskset.tasks[i], n_proc)<<std::endl;
