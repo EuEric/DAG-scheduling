@@ -3,6 +3,7 @@
 #include "dagSched/Taskset.h"
 #include "dagSched/tests.h"
 #include "dagSched/plot_utils.h"
+#include "dagSched/priority_parse.h"
 
 #include <ctime>    
 
@@ -18,7 +19,20 @@ int main(int argc, char **argv){
     std::string taskset_filename = "../demo/taskset.yaml";
     if(argc > 2)
         taskset_filename = argv[2];
-        
+
+    std::string priority_filename = "";
+    std::vector<int> priorities;
+    if (argc > 3) { 
+        priority_filename = argv[3];
+
+        if (priority_filename.find(".yaml") != std::string::npos || priority_filename.find(".yml") != std::string::npos) {
+            readPrioritiesFromYAML(priority_filename, priorities);   
+        } else {
+            std::cerr << "Unsupported file format for priorities. Use .dot or .yaml/.yml.\n";
+            return 1;
+        }
+
+    }
 
     int n_proc = 4;
     std::vector<int> typed_proc = {4,4};
@@ -65,9 +79,6 @@ int main(int argc, char **argv){
             std::cout<< "\t\tBaruah 2012 constrained (GP-FP-EDF): " <<dagSched::GP_FP_EDF_Baruah2012_C(taskset.tasks[i], n_proc)<<std::endl;
             implicit_taskset = false;
         }
-
-        //TODO: add input file for priorities and parse
-        std::vector<int> priorities;
 
         if(taskset.tasks[i].getDeadline() <= taskset.tasks[i].getPeriod()){
             std::cout<< "\t\tHan 2019 constrained typed(GP-FP): " <<dagSched::GP_FP_Han2019_C_1(taskset.tasks[i], typed_proc)<<std::endl;
