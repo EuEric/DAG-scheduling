@@ -61,7 +61,7 @@ float computeR(const int i, const std::set<int>& path, const std::vector<SubTask
 
 }
 
-float computeResponseTimeBound(DAGTask& task, const int m, std::vector<int>& priorities){
+float computeResponseTimeBound(DAGTask& task, const int m, std::map<int, int>& priorities){
     //algorithm 1
 
     std::vector<SubTask *> V = task.getVertices();
@@ -120,7 +120,7 @@ float computeResponseTimeBound(DAGTask& task, const int m, std::vector<int>& pri
     return responseTime;
 }
 
-bool GP_FP_He2019_C(DAGTask task, const int m, std::vector<int>& priorities){
+bool GP_FP_He2019_C(DAGTask task, const int m, std::map<int, int>& priorities){
     float responseTimeBound = computeResponseTimeBound(task, m, priorities);
     if (responseTimeBound <= task.getDeadline())
         return true;
@@ -150,7 +150,7 @@ bool GP_FP_FTP_He2019_C(Taskset taskset, const int m){
                 R[i] = 0;
             }
 
-            std::vector<int> empty_priorities;  // Empty vector
+            std::map<int, int> empty_priorities;
 
             R[i] = computeResponseTimeBound(taskset.tasks[i], m, empty_priorities);
             for(int j=0; j<i; ++j)

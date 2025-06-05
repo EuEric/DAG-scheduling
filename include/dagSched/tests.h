@@ -51,7 +51,7 @@ bool GP_FP_FTP_Fonseca2019(Taskset taskset, const int m, bool constrained_deadli
 
 bool GP_FP_Han2019_C_1(const DAGTask& task, const std::vector<int> m); 
 
-bool GP_FP_He2019_C(DAGTask task, const int m, std::vector<int>& priorities);
+bool GP_FP_He2019_C(DAGTask task, const int m, std::map<int, int>& priorities);
 bool GP_FP_FTP_He2019_C(Taskset taskset, const int m); 
 
 

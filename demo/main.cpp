@@ -21,7 +21,7 @@ int main(int argc, char **argv){
         taskset_filename = argv[2];
 
     std::string priority_filename = "";
-    std::vector<int> priorities;
+    std::map<int, int> priorities;
     if (argc > 3) { 
         priority_filename = argv[3];
 
