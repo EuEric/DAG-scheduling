@@ -1,4 +1,5 @@
 #include "dagSched/tests.h"
+#include <iomanip>
 #include <iostream>
 
 // Qingqiang He et al. “Intra-task priority assignmentin real-time scheduling of dag tasks on multi-cores”. (IEEE Transactions on Parallel and Distributed Systems 2019)
@@ -70,8 +71,11 @@ float computeResponseTimeBound(DAGTask& task, const int m, std::map<int, int>& p
     std::vector<int> ordIDs = task.getTopologicalOrder();
 
     if (priorities.empty()) {
+        std::cout << "Empty riorities" << " \n";
         // assign based on topological order
         for (int idx = 0, i; idx < ordIDs.size(); ++idx) {
+            // Test same priorities
+            // V[idx]->prio = 1;
             i = ordIDs[idx]; // vertex index
             V[i]->prio = idx;
         }
@@ -120,8 +124,12 @@ float computeResponseTimeBound(DAGTask& task, const int m, std::map<int, int>& p
     return responseTime;
 }
 
-bool GP_FP_He2019_C(DAGTask task, const int m, std::map<int, int>& priorities){
+bool GP_FP_He2019_C(DAGTask task, const int m, std::map<int, int>& priorities, std::ostream* output_file){
     float responseTimeBound = computeResponseTimeBound(task, m, priorities);
+    // YAML output
+    if (output_file) {
+        (*output_file) << "    - " << responseTimeBound << "\n";
+    }
     if (responseTimeBound <= task.getDeadline())
         return true;
     return false;

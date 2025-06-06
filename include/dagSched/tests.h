@@ -47,11 +47,11 @@ float computeCarryOutUpperBound(const DAGTask& task, const int interval, const s
 float computeCarryInUpperBound(const DAGTask& task, const int interval, const std::vector<std::pair<float, float>>& WD_UCI_y);
 bool GP_FP_FTP_Fonseca2017_C(Taskset taskset, const int m); 
 
-bool GP_FP_FTP_Fonseca2019(Taskset taskset, const int m, bool constrained_deadlines = true);
+bool GP_FP_FTP_Fonseca2019(Taskset, int, bool constrained_deadline = true, std::ostream* output_file = nullptr);
 
 bool GP_FP_Han2019_C_1(const DAGTask& task, const std::vector<int> m); 
 
-bool GP_FP_He2019_C(DAGTask task, const int m, std::map<int, int>& priorities);
+bool GP_FP_He2019_C(DAGTask task, const int m, std::map<int, int>& priorities, std::ostream* output_file = nullptr);
 bool GP_FP_FTP_He2019_C(Taskset taskset, const int m); 
 
 

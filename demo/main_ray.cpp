@@ -10,7 +10,7 @@
 namespace fs = std::filesystem;
 
 // Function to process a single taskset with its corresponding priority file
-void process_taskset(const fs::path& taskset_path, std::map<int, int>& priorities) {
+void process_taskset(const fs::path& taskset_path, std::map<int, int>& priorities, std::ostream* report = nullptr, int indent = 0) {
     const int n_proc = 4;
     const std::vector<int> typed_proc = {4, 4};
     
@@ -22,6 +22,8 @@ void process_taskset(const fs::path& taskset_path, std::map<int, int>& prioritie
         taskset.readTasksetFromDOT(taskset_path.string());
     }
 
+    std::string indent_spaces(indent, ' ');
+
     std::cout << "\nProcessing taskset: " << taskset_path.filename() << "\n";
 
     std::cout << "Assignment: " << dagSched::WorstFitProcessorsAssignment(taskset, n_proc) << "\n";
@@ -29,6 +31,11 @@ void process_taskset(const fs::path& taskset_path, std::map<int, int>& prioritie
     std::cout << "Taskset utilization: " << taskset.getUtilization() << "\n";
     std::cout << "Taskset Hyper-Period: " << taskset.getHyperPeriod() << "\n";
     std::cout << "Taskset max Density: " << taskset.getMaxDensity() << "\n\n";
+
+    // Report header for each taskset (Ray DAG)
+    if (report) {
+        (*report) << indent_spaces << "- taskset: " << taskset_path.filename().string() << "\n";
+    }
 
     //single DAG tests
     std::cout<<"Single task tests: \n";
@@ -45,7 +52,15 @@ void process_taskset(const fs::path& taskset_path, std::map<int, int>& prioritie
 
         if(taskset.tasks[i].getDeadline() <= taskset.tasks[i].getPeriod()){
             //std::cout<< "\t\tHan 2019 constrained typed(GP-FP): " <<dagSched::GP_FP_Han2019_C_1(taskset.tasks[i], typed_proc)<<std::endl;
-            std::cout<< "\t\tHe 2019 constrained typed(GP-FP): " <<dagSched::GP_FP_He2019_C(taskset.tasks[i], n_proc, priorities)<<std::endl;
+            if (report) {
+                (*report) << indent_spaces << "  he_2019:\n";
+                (*report) << indent_spaces << "    bounds:\n";
+            }
+            bool schedulable = dagSched::GP_FP_He2019_C(taskset.tasks[i], n_proc, priorities, report);
+            std::cout<< "\t\tHe 2019 constrained typed(GP-FP): " <<schedulable<<std::endl;
+            if (report) {
+                (*report) << indent_spaces << "    schedulable: " << std::boolalpha << schedulable << "\n\n";
+            }
         }
        // std::cout<< "\t\tBaruah 2012 arbitrary (GP-FP-EDF): "   <<dagSched::GP_FP_EDF_Baruah2012_A(taskset.tasks[i], n_proc)<<std::endl;
         std::cout<< "\t\tGraham 1969 : "   <<dagSched::Graham1969(taskset.tasks[i], n_proc)<<std::endl;
@@ -80,7 +95,15 @@ void process_taskset(const fs::path& taskset_path, std::map<int, int>& prioritie
         // std::cout<< "\tMelani 2015 constrained (GP-FP-EDF): "   <<dagSched::GP_FP_EDF_Melani2015_C(taskset, n_proc)<<std::endl;
         // std::cout<< "\tPathan 2017 constrained (GP-FP-DM): "   <<dagSched::GP_FP_DM_Pathan2017_C(taskset, n_proc)<<std::endl;
         // std::cout<< "\tFonseca 2017 constrained (GP-FP-FTP): "<<dagSched::GP_FP_FTP_Fonseca2017_C(taskset, n_proc)<<std::endl;
-        std::cout<< "\tFonseca 2019 constrained (GP-FP-FTP): "<<dagSched::GP_FP_FTP_Fonseca2019(taskset, n_proc)<<std::endl;
+        if (report) {
+            (*report) << indent_spaces << "  fonseca_2019:\n";
+            (*report) << indent_spaces << "    bounds:\n";
+        }
+        bool schedulable = dagSched::GP_FP_FTP_Fonseca2019(taskset, n_proc, true, report);
+        std::cout<< "\tFonseca 2019 constrained (GP-FP-FTP): "<<schedulable<<std::endl;
+        if (report) {
+            (*report) << indent_spaces << "    schedulable: " << std::boolalpha << schedulable << "\n\n";
+        }
         //std::cout<< "\tHe 2019 constrained (GP-FP-FTP): "<<dagSched::GP_FP_FTP_He2019_C(taskset, n_proc)<<std::endl;
 
         // limited preemption        
@@ -151,11 +174,12 @@ std::map<int, int> load_priorities(const fs::path& taskset_path,
 
 // Function to process all tasksets (single file or directory)
 void process_all_tasksets(const fs::path& taskset_path, 
-                         const fs::path& priority_path) {
+                         const fs::path& priority_path,
+                        std::ostream* report = nullptr) {
     if (fs::is_regular_file(taskset_path)) {
         // Single file case
         auto priorities = load_priorities(taskset_path, priority_path);
-        process_taskset(taskset_path, priorities);
+        process_taskset(taskset_path, priorities, report);
     } 
     else if (fs::is_directory(taskset_path)) {
         // Directory case
@@ -169,7 +193,7 @@ void process_all_tasksets(const fs::path& taskset_path,
                  entry.path().extension() == ".yml")) {
                 
                 auto priorities = load_priorities(entry.path(), priority_path);
-                process_taskset(entry.path(), priorities);
+                process_taskset(entry.path(), priorities, report);
             }
         }
     }
@@ -206,12 +230,19 @@ int main(int argc, char** argv) {
     }
 
     try {
-    process_all_tasksets(taskset_path, priority_path);
+        std::ofstream report_file("report.yaml");  // Open report.yaml
+
+        // If input is a directory, write the directory name as the root key
+        if (fs::is_directory(taskset_path)) {
+            report_file << taskset_path.filename().string() << ":\n";
+        }
+
+        process_all_tasksets(taskset_path, priority_path, &report_file);
+        report_file.close();
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << "\n";
         return 1;
     }
-
 
 
     return 0;

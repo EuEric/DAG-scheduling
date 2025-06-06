@@ -1,4 +1,5 @@
 #include "dagSched/tests.h"
+#include <iomanip>
 
 //Fonseca et al. “Schedulability Analysis of DAG Tasks with Arbitrary Deadlines under Global Fixed-Priority Scheduling”.  (Real-Time Systems 2019) 
 
@@ -117,15 +118,16 @@ float interTaskWorkload_C(const DAGTask& task, const float interval,  const std:
     return carry_workload + std::max( float(0), std::floor( (interval - delta_c) /  T )) * vol;
 }
 
-bool GP_FP_FTP_Fonseca2019(Taskset taskset, const int m, bool constrained_deadlines){
+bool GP_FP_FTP_Fonseca2019(Taskset taskset, const int m, bool constrained_deadlines, std::ostream* output_file) {
     std::sort(taskset.tasks.begin(), taskset.tasks.end(), deadlineMonotonicSorting);
 
-    std::vector<float> R_old (taskset.tasks.size(), 0);
-    std::vector<float> R (taskset.tasks.size(), 0);
+    std::vector<float> R_old(taskset.tasks.size(), 0);
+    std::vector<float> R(taskset.tasks.size(), 0);
 
-    std::vector<std::vector<std::pair<float, float>>> WD_UCO (taskset.tasks.size());
-    std::vector<std::vector<std::pair<float, float>>> WD_UCI (taskset.tasks.size());
-    for(int i=0; i<taskset.tasks.size(); ++i){
+    std::vector<std::vector<std::pair<float, float>>> WD_UCO(taskset.tasks.size());
+    std::vector<std::vector<std::pair<float, float>>> WD_UCI(taskset.tasks.size());
+
+    for (int i = 0; i < taskset.tasks.size(); ++i) {
         R_old[i] = taskset.tasks[i].getLength();
         taskset.tasks[i].R = taskset.tasks[i].getLength();
         taskset.tasks[i].computeEFTs();
@@ -134,38 +136,47 @@ bool GP_FP_FTP_Fonseca2019(Taskset taskset, const int m, bool constrained_deadli
         WD_UCI[i] = computeWorkloadDistributionCI(taskset.tasks[i]);
     }
 
-    for(int i=0; i<taskset.tasks.size(); ++i){
+    bool is_schedulable = true;
 
-        if(R_old[i] > taskset.tasks[i].getDeadline())
-            return false;
+    for (int i = 0; i < taskset.tasks.size(); ++i) {
+
+        if (R_old[i] > taskset.tasks[i].getDeadline())
+            is_schedulable = false;
 
         bool init = true;
-        while(!areEqual<float>(R[i], R_old[i]) && R[i] <= taskset.tasks[i].getDeadline()){
-            if(!init)
+        while (!areEqual<float>(R[i], R_old[i]) && R[i] <= taskset.tasks[i].getDeadline()) {
+            if (!init)
                 R_old[i] = R[i];
 
-            //higher prio tasks interference
             R[i] = 0;
-            for(int j=0; j<i; ++j)
-                R[i] += interTaskWorkload_C(taskset.tasks[j], R_old[i],  WD_UCO[j], WD_UCI[j], m, constrained_deadlines); 
-            R[i] *= (1. / m);
+            for (int j = 0; j < i; ++j)
+                R[i] += interTaskWorkload_C(taskset.tasks[j], R_old[i], WD_UCO[j], WD_UCI[j], m, constrained_deadlines);
+            R[i] *= (1.0 / m);
 
-            // length + self interference
-            R[i] += taskset.tasks[i].getLength() + 1. / m * (taskset.tasks[i].getVolume() - taskset.tasks[i].getLength());
+            R[i] += taskset.tasks[i].getLength() + 1.0 / m * (taskset.tasks[i].getVolume() - taskset.tasks[i].getLength());
 
-            if(R[i] < R_old[i])
+            if (R[i] < R_old[i])
                 break;
 
             init = false;
         }
 
-        // if( areEqual<float>(R[i], R_old[i]))
-            taskset.tasks[i].R = R[i];
+        taskset.tasks[i].R = R[i];
+
+        // Console output
+        std::cout << "Fonseca 2019 bound: " << R[i] << '\n';
+
+        // YAML output
+        if (output_file) {
+            (*output_file) << "    - " << R[i] << "\n";
+        }
+
         if (R[i] > taskset.tasks[i].getDeadline())
-            return false;
+            is_schedulable = false;
     }
 
-    return true;
+    return is_schedulable;
 }
+
 
 }
