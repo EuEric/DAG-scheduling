@@ -59,11 +59,19 @@ void process_taskset(const fs::path& taskset_path, std::map<int, int>& prioritie
             bool schedulable = dagSched::GP_FP_He2019_C(taskset.tasks[i], n_proc, priorities, report);
             std::cout<< "\t\tHe 2019 constrained typed(GP-FP): " <<schedulable<<std::endl;
             if (report) {
-                (*report) << indent_spaces << "    schedulable: " << std::boolalpha << schedulable << "\n\n";
+                (*report) << indent_spaces << "    schedulable: " << std::boolalpha << schedulable << "\n";
             }
         }
        // std::cout<< "\t\tBaruah 2012 arbitrary (GP-FP-EDF): "   <<dagSched::GP_FP_EDF_Baruah2012_A(taskset.tasks[i], n_proc)<<std::endl;
-        std::cout<< "\t\tGraham 1969 : "   <<dagSched::Graham1969(taskset.tasks[i], n_proc)<<std::endl;
+       if (report) {
+           (*report) << indent_spaces << "  graham_1969:\n";
+           (*report) << indent_spaces << "    bounds:\n";
+        }
+        bool schedulable = dagSched::Graham1969(taskset.tasks[i], n_proc, report);
+        std::cout<< "\t\tGraham 1969 : "   <<schedulable<<std::endl;
+        if (report) {
+            (*report) << indent_spaces << "    schedulable: " << std::boolalpha << schedulable << "\n";
+        }
 
         if(taskset.tasks[i].getDeadline() > taskset.tasks[i].getPeriod()){
             constrained_taskset = false;
@@ -102,7 +110,7 @@ void process_taskset(const fs::path& taskset_path, std::map<int, int>& prioritie
         bool schedulable = dagSched::GP_FP_FTP_Fonseca2019(taskset, n_proc, true, report);
         std::cout<< "\tFonseca 2019 constrained (GP-FP-FTP): "<<schedulable<<std::endl;
         if (report) {
-            (*report) << indent_spaces << "    schedulable: " << std::boolalpha << schedulable << "\n\n";
+            (*report) << indent_spaces << "    schedulable: " << std::boolalpha << schedulable << "\n";
         }
         //std::cout<< "\tHe 2019 constrained (GP-FP-FTP): "<<dagSched::GP_FP_FTP_He2019_C(taskset, n_proc)<<std::endl;
 
@@ -175,7 +183,7 @@ std::map<int, int> load_priorities(const fs::path& taskset_path,
 // Function to process all tasksets (single file or directory)
 void process_all_tasksets(const fs::path& taskset_path, 
                          const fs::path& priority_path,
-                        std::ostream* report = nullptr) {
+                         std::ostream* report = nullptr) {
     if (fs::is_regular_file(taskset_path)) {
         // Single file case
         auto priorities = load_priorities(taskset_path, priority_path);
@@ -187,7 +195,7 @@ void process_all_tasksets(const fs::path& taskset_path,
             throw std::runtime_error("Cannot pair directory with single priority file");
         }
         
-        for (const auto& entry : fs::directory_iterator(taskset_path)) {
+        for (const auto& entry : fs::recursive_directory_iterator(taskset_path)) {  // <-- CHANGED THIS LINE
             if (entry.is_regular_file() && 
                 (entry.path().extension() == ".yaml" || 
                  entry.path().extension() == ".yml")) {
@@ -198,6 +206,7 @@ void process_all_tasksets(const fs::path& taskset_path,
         }
     }
 }
+
 
 int main(int argc, char** argv) {
     if (argc < 2) {
