@@ -243,7 +243,12 @@ int main(int argc, char** argv) {
 
         // If input is a directory, write the directory name as the root key
         if (fs::is_directory(taskset_path)) {
-            report_file << taskset_path.filename().string() << ":\n";
+            std::string root_name = taskset_path.filename().string();
+            if (root_name.empty()) {
+                root_name = "output";  // or "data" if you prefer
+            }
+            report_file << root_name << ":\n";
+
         }
 
         process_all_tasksets(taskset_path, priority_path, &report_file);
