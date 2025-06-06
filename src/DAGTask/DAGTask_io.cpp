@@ -40,8 +40,10 @@ std::ostream& operator<<(std::ostream& os, const DAGTask& t)
 }
 
 void DAGTask::readTaskFromYamlNode(YAML::Node tasks, const int i){
-    t = tasks[i]["t"].as<int>();
-    d = tasks[i]["d"].as<int>();
+    t = tasks[i]["t"].as<float>();
+    d = tasks[i]["d"].as<float>();
+    this->setDeadline(d);
+    this->setPeriod(t);
 
     YAML::Node vert = tasks[i]["vertices"];
 
