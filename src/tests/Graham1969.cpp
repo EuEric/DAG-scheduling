@@ -4,8 +4,20 @@
 
 namespace dagSched{
 
-bool Graham1969(const DAGTask& task, const int m){
-    if(task.getLength() + 1. / m * (task.getVolume() - task.getLength()) > task.getDeadline()){
+bool Graham1969(const DAGTask& task, const int m, std::ostream* output_file){
+
+    float bound = task.getLength() + 1. / m * (task.getVolume() - task.getLength());
+
+
+    // Console output
+    std::cout << "Graham 1969 bound: " << bound << '\n';
+
+    // YAML output
+    if (output_file) {
+        (*output_file) << "    - " << bound << "\n";
+    }
+
+    if( bound > task.getDeadline()){
         return false;
     }
     return true;

@@ -19,7 +19,7 @@ bool BestFitProcessorsAssignment(Taskset& taskset, const int m);
 
 
 //methods from here
-bool Graham1969(const DAGTask& task, const int m); 
+bool Graham1969(const DAGTask& task, const int m, std::ostream* output_file = nullptr); 
 
 //global policy, fully preemptive
 bool GP_FP_EDF_Baruah2012_C(const DAGTask& task, const int m);
