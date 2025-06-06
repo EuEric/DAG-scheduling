@@ -62,5 +62,8 @@ target_link_libraries(dag-sched ${dag-sched-LIBS} )
 add_executable(demo demo/main.cpp)
 target_link_libraries(demo dag-sched)
 
+add_executable(ray demo/main_ray.cpp)
+target_link_libraries(ray dag-sched)
+
 add_executable(eval demo/evaluate.cpp)
 target_link_libraries(eval dag-sched)
