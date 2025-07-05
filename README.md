@@ -1,10 +1,11 @@
 # A library to test schedulability of the real-time DAG task model
 
-This repo offers a library to handle the real-time Directed Acyclic Graph (DAG) task model and its extensions, such as the Conditional DAG and the Typed DAG.
-Moreover, several methods from real-time literature have been implemented. 
-It's one of the contributions of Micaela Verucchi's Ph.D. thesis "A comprehensive analysis of DAG tasks: solutions for modern real-time embedded systems".
+I acknowledge the use of Chat GPT 4o to add the functionality of reading an entire directory as input.
 
-If you use this code in your research, please cite the following paper.
+This code represents a fork of the repo from https://github.com/mive93/DAG-scheduling. The original repo is a library for evaluating real-time Directed Acyclic Graph (DAG) tasks. It uses several analysis techniques from literature, which can be found on the original [page](https://github.com/mive93/DAG-scheduling?tab=readme-ov-file#supported-schedulability-tests).
+Moreover, several methods from real-time literature have been implemented. This represents the contributions of Micaela Verucchi's Ph.D. thesis "A comprehensive analysis of DAG tasks: solutions for modern real-time embedded systems".
+
+As per the author's wishes, please cite the following paper, if this code is used in research.
 
 ```
 @article{verucchi2023survey,
@@ -24,16 +25,14 @@ On Linux, install the dependencies in this way:
 
 ```
 sudo apt-get install graphviz libyaml-cpp-dev python3-matplotlib libtbb-dev libeigen3-dev python3-dev
-
-
 ```
 
-## How to compile this repo
+## Compilation
 
 Once the dependencies have been installed, build the project with cmake.
 
 ```
-git clone https://github.com/mive93/DAG-scheduling 
+git clone https://github.com/EuEric/DAG-scheduling 
 cd DAG-scheduling
 git submodule update --init --recursive 
 mkdir build && cd build
@@ -41,117 +40,74 @@ cmake ..
 make 
 ```
 
+## Usage
+
+After compiling move to the build folder by running the command `cd build`. There will be three compiled executables: **demo**, **eval** and **ray**. The first two, [demo](https://github.com/mive93/DAG-scheduling?tab=readme-ov-file#demo) and [eval](https://github.com/mive93/DAG-scheduling?tab=readme-ov-file#eval) are from the original source code. To see how to work with these files, check the given links. For the third file, **ray**, it provides the necessary executable to perform the RT analysis for a single DAG yaml, or from an entire directory. The Ray executable can be run as:
+```
+./ray <taskset_file_or_dir> <priority_file_or_dir>
+```
+
+where
+  * `<taskset_file_or_dir>` is the first argument, representing Ray DAGs in yaml format. The input should be given as a path, to either a yaml file or an entire directory.
+  * `<priority_file_or_dir>` is the the second argument, representing priority files for the given Ray DAGs in yaml format. The input should be given as a path, to either a yaml file or an entire directory. This arugment is **optional**, as DAGs can be analyzed **with** and **without** priorities.
+
+
 ## Input and output
 
-This library reads and outputs DAG in DOT format as shown in the image. 
-
-![dot](img/dot_format.png "DAG with DOT") 
+This library reads DAGs and outputs RT analysis results. 
 
 ### Input
 
-The library accept two input formats for taskse: yaml or DOT.
+The library accept two input formats for taskse: yaml or DOT. Refer to the original [code](https://github.com/EuEric/DAG-scheduling) for instructions related to DOT format.
 
 #### YAML format
 
-A taskset is specified as an array of task, which has the following params
+A taskset is specified as an array of **tasks**, which has the following parameters:
  * ```t``` the period
  * ```d``` the deadline
  * ```vertices``` array of nodes of the DAG, defined by: 
     * ```id``` id of the node
     * ```c``` WCET of the node
-    * ```p``` core to which the node is assigned to [optional]
-    * ```s``` gamma, the kind of engine the node is assigned to [optional]
+ * ```edges``` array of **edges** of the DAG, defined by: 
+    * ```to``` id of the vertex connected to the **head** of the edge
+    * ```from```id of the vertex connected to the **tail** of the edge
+ * ```indirect_edges``` array of **indirect edges** of the DAG, defined by: 
+    * ```to``` id of the vertex connected to the **head** of the edge
+    * ```from```id of the vertex connected to the **tail** of the edge
 
-An example is given with demo/taskset.yaml.
-#### DOT format
+The `yaml` file comes with a **tasks** array as the top-level node of the yaml format.
 
-Each DAG is defined via a DOT file, and each path of dot file belonging to the taskset should be written (line by line) in a txt file.
-An example is given in demo/dot_files.txt
-
-Each DOT file is the defined with this convention.
-At the begninning there is an initial node with the info of the DAG Task, where the deadline ```D``` and the period ```T``` should be specified. For example: 
-```i [shape=box, D=603.859, T=1605.45]; ```
-
-Then each node is secified by an ID, a label which represent the WCET and additional optional parameters, as ```p``` and ```s```. For example:
-``` 0 [label="57", p=7];```
-
-Finally the edges are discribed only via nodes IDs. For example: 
-``` 0 -> 2;```
-
-A complete example is given in demo/test0.dot.
+An example, specific to Ray DAGs can be found in demo/taskset_ray.yaml.
 
 ### Output
 
-To convert a dot file into a png image use the following command: 
+Running the `./ray` executable generates an output file named `report.yaml` inside the `build/` directory. This file represents the real-time (RT) analysis performed using the Graham[1] and He[2] schedulability tests. In our code, we modified the He test source code, to enable the usage of a priority file.
 
-```
-dot -Tpng test.dot > test.png
-```
+### Output structure
 
-## Demo
-The demo is a program that tests all the supported methods on user-defined DAG task set or a randomly generated one.
-It can be executed as 
+The report.yaml file organizes results hierarchically, reflecting the structure of the input folder.
 
-```
-./demo <random-flag> <dag-file>
-```
-
-where
-  * ```<random-flag> ``` can be set to 0 if the taskset should be read from file, or to 1 if the taskset should be randomly generated, using the method proposed by Melani et al. [1][2].
-  * ```<dag-file>``` path to the file that describes the task set to analyze if ```<random-flag> ``` is set to 0.
-
-## Eval
-The eval program will evaluate several schedulability methods based on a given config file.
-To run the evaluation execute:
-
-```
-./eval <config-file> <show-plots>
-```
-Where 
-  * ```<config-file>``` is a yml file, like the ones in the data folder, that specifies all the parameters for the task set generation and the selection of the methods to evaluate. 
-  * ```<show-plots>``` 1 to show plots, 0 to hide them. In any case, the resulting plots will not be shown but saved in a folder named res.
-
-At the end of each evaluation two kinds of plots will be produced, one regarding the schedulability rate and one the execution times of the methods.
-
-![plots](img/sched_times.png "Resulting plots") 
+For example, if your input folder is named `DAGs/` and contains several subfolders (e.g., `ETP_0.1_GU_0.2`, `ETP_0.1_GU_0.4`), the yaml file will include a top-level `output:` array node, together with each subfolder, is represented as follows:
+* ```output:```
+  * ```ETP_0.1_GU_0.2:```
+  * ```ETP_0.1_GU_0.4:```
 
 
-## Supported schedulability tests
+Each subfolder entry is an array containing results for each analyzed yaml file, with the following structure:
 
-| Work                  | Workload    | Deadline | Model      | Scheduling | Preemption | Algorithm |
-| ----------------------| ----------- | -------- | ---------- | ---------- | ---------- | --------- |
-| Baruah2012 [3]        | single task | C        | DAG        | G          | -          | EDF       |
-| Bonifaci2013 [4]      | task set    | A        | DAG        | G          | FP         | EDF, DM   |
-| Li2013 [5]            | task set    | I        | DAG        | G          | FP         | EDF       |
-| Qamhieh2013 [6]       | task set    | C        | DAG        | G          | FP         | EDF       |
-| Baruah2014 [7]        | task set    | C        | DAG        | G          | FP         | EDF       |
-| Melani2015 [1]        | task set    | C        | DAG, C-DAG | G          | FP         | EDF, FTP  |
-| Serrano2016 [8]       | task set    | C        | DAG        | G          | LP         | FTP       |
-| Fonseca2016 [14]      | task set    | C        | DAG        | P          | FP         | FTP       |
-| Pathan2017 [9]        | task set    | C        | DAG        | G          | FP         | DM        |
-| Fonseca2017 [10]      | task set    | C        | DAG        | G          | FP         | DM        |
-| Casini2018 [15]       | task set    | C        | DAG        | P          | LP         | FTP       |
-| Han2019 [11]          | single task | C        | H-DAG      | G          | \-         | \-        |
-| He2019 [12]           | task set    | C        | DAG        | G          | FP         | EDF, FTP  |
-| Fonseca2019 [13]      | task set    | C, A     | DAG        | G          | FP         | EDF, FTP  |
-| Nasri2019 [16]        |task set     | C        | DAG        | G          | LP         | EDF       |
-| Zahaf2020 [17]        |task set     | C        | HC-DAG     | P          | FP, FNP    | EDF       |
+* ```taskset: <filename.yaml>```
+* ```he_2019:```
+  * ```bounds:```
+    * ```- <float value>```
+  * ```schedulable: <boolean value>```
+  * ```graham_1969:```
+    * ```bounds:```
+      * ```- <float value>```
+    * ```schedulable: <boolean value>```
 
- * [1] Alessandra Melani et al. “Response-time analysis of conditional dag tasks in multiprocessor systems”. (ECRTS 2015)
- * [2] https://retis.sssup.it/~d.casini/resources/DAG_Generator/cptasks.zip
- * [3] Baruah et al. "A generalized parallel task model for recurrent real-time processes" (RTSS 2012)
- * [4] Bonifaci et al., "Feasibility Analysis in the Sporadic DAG Task Model" (ECRTS 2013)
- * [5] Li et al. "Outstanding Paper Award: Analysis of Global EDF for Parallel Tasks" (ECRTS 2013) 
- * [6] Qamhieh et al. "Global EDF scheduling of directed acyclic graphs on multiprocessor systems", (RTNS 2013)
- * [7] Baruah et al. "Improved Multiprocessor Global Schedulability Analysis of Sporadic DAG Task Systems" (ECRTS 2014)
- * [8] Maria A Serrano et al. “Response-time analysis of DAG tasks under fixed priority scheduling with limited preemptions” (DATE 2016)
- * [9] Risat Pathan et al.  “Scheduling parallel real-time recurrent tasks on multicore platforms”. (IEEE Transactions on Parallel and Distributed Systems 2017)
- * [10] Fonseca et al. “Improved response time analysis of sporadic dag tasks for global fp scheduling”.  (RTNS 2017) 
- * [11] Meiling Han et al. “Response time bounds for typed dag parallel tasks on heterogeneous multi-cores”. (IEEE Transactions on Parallel and Distributed Systems 2019)
- * [12] Qingqiang He et al. “Intra-task priority assignment in real-time scheduling of dag tasks on multi-cores”. (IEEE Transactions on Parallel and Distributed Systems 2019)
- * [13] Fonseca et al. “Schedulability Analysis of DAG Tasks with Arbitrary Deadlines under Global Fixed-Priority Scheduling”.  (Real-Time Systems 2019) 
- * [14] Fonseca et al. “Response time analysis of sporadic dag tasks under partitioned scheduling”. (SIES 2016)
- * [15] Daniel Casini et al. “Partitioned fixed-priority scheduling of parallel tasks without preemptions”. (RTSS 2018).
- * [16] Mitra Nasri, et al. “Response-time analysis of limited-preemptive parallel DAG tasks under global scheduling”. (ECRTS 2019)
- * [17] Houssam-Eddine Zahaf et al. “The HPC-DAG Task Model for Heterogeneous Real-Time Systems”. (IEEE Transactions on Computers 2020)
+## References
+
+- [1] Graham, R. L. (1969). Bounds on Multiprocessing Timing Anomalies. SIAM Journal on Applied Mathematics, 17(2), 416–429. https://doi.org/10.1137/0117039
+- [2] He, Q., Jiang, X., Guan, N., & Guo, Z. (2019). Intra-Task Priority Assignment in Real-Time Scheduling of DAG Tasks on Multi-Cores. IEEE Transactions on Parallel and Distributed Systems, 30(10), 2283–2295. https://doi.org/10.1109/TPDS.2019.2910525
+
 
