@@ -111,3 +111,8 @@ Each subfolder entry is an array containing results for each analyzed yaml file,
 - [2] He, Q., Jiang, X., Guan, N., & Guo, Z. (2019). Intra-Task Priority Assignment in Real-Time Scheduling of DAG Tasks on Multi-Cores. IEEE Transactions on Parallel and Distributed Systems, 30(10), 2283–2295. https://doi.org/10.1109/TPDS.2019.2910525
 
 
+## Related code sources
+
+- To generate Ray DAGs, use the code from https://github.com/EuEric/RD-Gen.
+- To generate files containing priorities for the generate Ray DAGs, use the code from https://github.com/EuEric/dag_theory_code.
+- To generate runnable Ray applications from Ray DAGs, use the code from https://github.com/EuEric/ray_code_generator.
